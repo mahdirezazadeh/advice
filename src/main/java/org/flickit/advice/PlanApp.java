@@ -52,8 +52,6 @@ public class PlanApp {
         List<Step> steps = new ArrayList<>();
         steps.add(new Step(id++, target, 11, 17));
         steps.add(new Step(id++, target, 4, 16));
-//        steps.add(new Step(id++, target, 6, 4));
-//        steps.add(new Step(id++, target, 4, 4));
         steps.add(new Step(id++, target, 8, 10));
         steps.add(new Step(id++, target, 12, 15));
         steps.add(new Step(id++, target, 13, 17));
@@ -62,9 +60,6 @@ public class PlanApp {
         steps.add(new Step(id++, target, 12, 25));
         steps.add(new Step(id++, target, 13, 17));
         steps.add(new Step(id++, target, 14, 25));
-
-//        Comparator<Step> comparator = Comparator.comparing(Step::benefit, (b1, b2) -> -1 * b1.compareTo(b2));
-//        steps.sort(comparator);
 
         return new Plan(target, steps);
     }

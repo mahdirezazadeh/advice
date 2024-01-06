@@ -23,9 +23,7 @@ public class PlanConstraintProvider implements ConstraintProvider {
                 minCount(constraintFactory),
                 minGain(constraintFactory),
 //                // Soft constraints
-                totalBenefit(constraintFactory),
-//                totalGain(constraintFactory),
-//                totalCost(constraintFactory)
+                totalBenefit(constraintFactory)
         };
     }
 
@@ -60,27 +58,6 @@ public class PlanConstraintProvider implements ConstraintProvider {
                 .penalize(HardSoftScore.ONE_SOFT,
                         (target, sum) -> target.getMinGain() - sum)
                 .asConstraint("minGain");
-    }
-
-    Constraint totalGain(ConstraintFactory constraintFactory) {
-        return constraintFactory
-                .forEach(Step.class)
-                .filter(Step::getIsOnPlan)
-                .groupBy(Step::getTarget, sum(step -> step.getGain()))
-                .filter((t, sum) -> sum >= t.getMinGain())
-                .reward(HardSoftScore.ONE_SOFT,
-                        (t, sum) -> sum - t.getMinGain())
-                .asConstraint("totalGain");
-    }
-
-    Constraint totalCost(ConstraintFactory constraintFactory) {
-        return constraintFactory
-                .forEach(Step.class)
-                .filter(Step::getIsOnPlan)
-                .groupBy(Step::getTarget, sum(Step::getCost))
-                .penalize(HardSoftScore.ONE_SOFT,
-                        (t, sum) -> sum)
-                .asConstraint("totalCost");
     }
 
     Constraint totalBenefit(ConstraintFactory constraintFactory) {

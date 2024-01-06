@@ -29,10 +29,6 @@ public class Step {
         this.cost = cost;
     }
 
-//    public float benefit() {
-//        return (float) gain / cost;
-//    }
-
     @Override
     public String toString() {
         return "TakenStep{" +
@@ -40,9 +36,5 @@ public class Step {
                 ", cost=" + cost +
                 ", isOnPlan=" + isOnPlan +
                 '}';
-    }
-
-    public float benefit() {
-        return (float) gain / cost;
     }
 }
