@@ -1,6 +1,9 @@
 package org.flickit.advice.domain;
 
-import ai.timefold.solver.core.api.domain.solution.*;
+import ai.timefold.solver.core.api.domain.solution.PlanningEntityCollectionProperty;
+import ai.timefold.solver.core.api.domain.solution.PlanningScore;
+import ai.timefold.solver.core.api.domain.solution.PlanningSolution;
+import ai.timefold.solver.core.api.domain.solution.ProblemFactProperty;
 import ai.timefold.solver.core.api.domain.valuerange.ValueRangeProvider;
 import ai.timefold.solver.core.api.score.buildin.hardsoft.HardSoftScore;
 import lombok.*;
@@ -20,19 +23,15 @@ public class Plan {
     @ValueRangeProvider
     private Target target;
 
-    @ProblemFactCollectionProperty
-    @ValueRangeProvider
-    private List<Boolean> isOnPlans = List.of(Boolean.TRUE, Boolean.FALSE);
-
     @PlanningEntityCollectionProperty
-    private List<Step> steps;
+    private List<Question> questions;
 
     @PlanningScore
     private HardSoftScore score;
 
-    public Plan(Target target, List<Step> steps) {
+    public Plan(Target target, List<Question> questions) {
         this.target = target;
-        this.steps = steps;
+        this.questions = questions;
     }
 }
 

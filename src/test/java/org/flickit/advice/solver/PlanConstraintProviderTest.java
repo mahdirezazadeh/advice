@@ -2,31 +2,31 @@ package org.flickit.advice.solver;
 
 import ai.timefold.solver.test.api.score.stream.ConstraintVerifier;
 import org.flickit.advice.domain.Plan;
-import org.flickit.advice.domain.Step;
+import org.flickit.advice.domain.Question;
 import org.flickit.advice.domain.Target;
 import org.junit.jupiter.api.Test;
 
 class PlanConstraintProviderTest {
 
     ConstraintVerifier<PlanConstraintProvider, Plan> constraintVerifier = ConstraintVerifier.build(
-            new PlanConstraintProvider(), Plan.class, Step.class);
+            new PlanConstraintProvider(), Plan.class, Question.class);
 
     @Test
     void initScore() {
         Target target = new Target(10);
 
-        Step step1 = new Step(0L, target, 8, 10);
-        step1.setIsOnPlan(true);
+        Question question1 = new Question(0L, target, 8, 10);
+        question1.setPower(true);
 
         constraintVerifier.verifyThat(PlanConstraintProvider::initScore)
-                .given(step1)
+                .given(question1)
                 .penalizesBy(1);
 
-        Step step2 = new Step(1L, target, 8, 10);
-        step2.setIsOnPlan(false);
+        Question question2 = new Question(1L, target, 8, 10);
+        question2.setPower(false);
 
         constraintVerifier.verifyThat(PlanConstraintProvider::initScore)
-                .given(step2)
+                .given(question2)
                 .penalizesBy(1);
     }
 
@@ -34,13 +34,13 @@ class PlanConstraintProviderTest {
     void minCount() {
         Target target = new Target(10);
 
-        Step step1 = new Step(0L, target, 8, 10);
-        Step step2 = new Step(1L, target, 8, 10);
-        step1.setIsOnPlan(true);
-        step2.setIsOnPlan(true);
+        Question question1 = new Question(0L, target, 8, 10);
+        Question question2 = new Question(1L, target, 8, 10);
+        question1.setPower(true);
+        question2.setPower(true);
 
         constraintVerifier.verifyThat(PlanConstraintProvider::minCount)
-                .given(step1, step2)
+                .given(question1, question2)
                 .rewardsWith(1);
     }
 
@@ -48,11 +48,11 @@ class PlanConstraintProviderTest {
     void gainLeast() {
         Target target = new Target(10);
 
-        Step step = new Step(0L, target, 8, 10);
-        step.setIsOnPlan(true);
+        Question question = new Question(0L, target, 8, 10);
+        question.setPower(true);
 
         constraintVerifier.verifyThat(PlanConstraintProvider::minGain)
-                .given(step, target)
+                .given(question, target)
                 .penalizesBy(2);
     }
 
@@ -60,11 +60,11 @@ class PlanConstraintProviderTest {
     void totalBenefit() {
         Target target = new Target(10);
 
-        Step step = new Step(0L, target, 8, 10);
-        step.setIsOnPlan(true);
+        Question question = new Question(0L, target, 8, 10);
+        question.setPower(true);
 
         constraintVerifier.verifyThat(PlanConstraintProvider::totalBenefit)
-                .given(step)
+                .given(question)
                 .rewardsWith(16);
     }
 }

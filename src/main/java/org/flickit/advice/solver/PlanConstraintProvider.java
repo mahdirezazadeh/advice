@@ -5,7 +5,7 @@ import ai.timefold.solver.core.api.score.stream.Constraint;
 import ai.timefold.solver.core.api.score.stream.ConstraintFactory;
 import ai.timefold.solver.core.api.score.stream.ConstraintProvider;
 import ai.timefold.solver.core.api.score.stream.Joiners;
-import org.flickit.advice.domain.Step;
+import org.flickit.advice.domain.Question;
 import org.flickit.advice.domain.Target;
 
 import java.util.function.Function;
@@ -29,7 +29,7 @@ public class PlanConstraintProvider implements ConstraintProvider {
 
     Constraint initScore(ConstraintFactory constraintFactory) {
         return constraintFactory
-                .forEach(Step.class)
+                .forEach(Question.class)
                 .groupBy(count())
                 .penalize(HardSoftScore.ONE_HARD, c -> 1)
                 .asConstraint("initScore");
@@ -37,8 +37,8 @@ public class PlanConstraintProvider implements ConstraintProvider {
 
     Constraint minCount(ConstraintFactory constraintFactory) {
         return constraintFactory
-                .forEach(Step.class)
-                .filter(Step::getIsOnPlan)
+                .forEach(Question.class)
+                .filter(Question::getPower)
                 .groupBy(count())
                 .filter(count -> count > 0)
                 .reward(HardSoftScore.ONE_HARD, c -> 1)
@@ -49,11 +49,11 @@ public class PlanConstraintProvider implements ConstraintProvider {
     Constraint minGain(ConstraintFactory constraintFactory) {
 
         return constraintFactory
-                .forEach(Step.class)
+                .forEach(Question.class)
                 .join(Target.class,
-                        Joiners.equal(Step::getTarget, Function.identity()),
-                        Joiners.filtering((step, target) -> step.getIsOnPlan()))
-                .groupBy((step, target) -> target, sum((stp, tgt) -> stp.getGain()))
+                        Joiners.equal(Question::getTarget, Function.identity()),
+                        Joiners.filtering((question, target) -> question.getPower()))
+                .groupBy((question, target) -> target, sum((q, tgt) -> q.getGain()))
                 .filter((target, totalGain) -> totalGain < target.getMinGain())
                 .penalize(HardSoftScore.ONE_SOFT,
                         (target, sum) -> target.getMinGain() - sum)
@@ -62,9 +62,9 @@ public class PlanConstraintProvider implements ConstraintProvider {
 
     Constraint totalBenefit(ConstraintFactory constraintFactory) {
         return constraintFactory
-                .forEach(Step.class)
-                .filter(Step::getIsOnPlan)
-                .groupBy(Step::getTarget, sum(Step::getGain), sum(Step::getCost))
+                .forEach(Question.class)
+                .filter(Question::getPower)
+                .groupBy(Question::getTarget, sum(Question::getGain), sum(Question::getCost))
                 .reward(HardSoftScore.ONE_SOFT,
                         (target, totalGain, totalCost) -> Math.round(((float) totalGain / totalCost) * 20))
                 .asConstraint("totalBenefit");
