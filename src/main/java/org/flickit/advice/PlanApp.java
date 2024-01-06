@@ -5,7 +5,6 @@ import ai.timefold.solver.core.api.solver.SolverFactory;
 import ai.timefold.solver.core.config.solver.SolverConfig;
 import org.flickit.advice.domain.Plan;
 import org.flickit.advice.domain.Step;
-import org.flickit.advice.domain.TakenStep;
 import org.flickit.advice.domain.Target;
 import org.flickit.advice.solver.PlanConstraintProvider;
 
@@ -16,10 +15,14 @@ import java.util.List;
 public class PlanApp {
 
     public static void main(String[] args) {
-        SolverFactory<Plan> solverFactory = SolverFactory.create(new SolverConfig().withSolutionClass(Plan.class).withEntityClasses(TakenStep.class).withConstraintProviderClass(PlanConstraintProvider.class)
-                // The solver runs only for 5 seconds on this small dataset.
-                // It's recommended to run for at least 5 minutes ("5m") otherwise.
-                .withTerminationSpentLimit(Duration.ofSeconds(5)));
+        SolverFactory<Plan> solverFactory = SolverFactory
+                .create(new SolverConfig()
+                        .withSolutionClass(Plan.class)
+                        .withEntityClasses(Step.class)
+                        .withConstraintProviderClass(PlanConstraintProvider.class)
+                        // The solver runs only for 5 seconds on this small dataset.
+                        // It's recommended to run for at least 5 minutes ("5m") otherwise.
+                        .withTerminationSpentLimit(Duration.ofSeconds(10)));
 //                .withTerminationSpentLimit(Duration.ofMinutes(5)));
 
         // Load the problem
@@ -36,25 +39,34 @@ public class PlanApp {
     private static void printPlan(Plan solution) {
         System.out.println("score is: " + solution.getScore());
 
-        List<TakenStep> takenSteps = solution.getTakenSteps().stream().filter(TakenStep::getIsOnPlan).toList();
-        takenSteps.forEach(takenStep -> System.out.println(takenStep.getStep())
+        List<Step> steps = solution.getSteps().stream().filter(Step::getIsOnPlan).toList();
+        steps.forEach(System.out::println
 
         );
     }
 
     public static Plan generateDemoData() {
-        Target target = new Target(10, 15);
+        Target target = new Target(32);
 
         long id = 0L;
-        List<TakenStep> takenSteps = new ArrayList<>();
-        takenSteps.add(new TakenStep(id++, target, new Step(12, 4)));
-        takenSteps.add(new TakenStep(id++, target, new Step(12, 6)));
-        takenSteps.add(new TakenStep(id++, target, new Step(13, 6)));
-        takenSteps.add(new TakenStep(id++, target, new Step(14, 5)));
-        takenSteps.add(new TakenStep(id++, target, new Step(10, 5)));
+        List<Step> steps = new ArrayList<>();
+        steps.add(new Step(id++, target, 11, 17));
+        steps.add(new Step(id++, target, 4, 16));
+//        steps.add(new Step(id++, target, 6, 4));
+//        steps.add(new Step(id++, target, 4, 4));
+        steps.add(new Step(id++, target, 8, 10));
+        steps.add(new Step(id++, target, 12, 15));
+        steps.add(new Step(id++, target, 13, 17));
+        steps.add(new Step(id++, target, 14, 18));
+        steps.add(new Step(id++, target, 10, 11));
+        steps.add(new Step(id++, target, 12, 25));
+        steps.add(new Step(id++, target, 13, 17));
+        steps.add(new Step(id++, target, 14, 25));
 
+//        Comparator<Step> comparator = Comparator.comparing(Step::benefit, (b1, b2) -> -1 * b1.compareTo(b2));
+//        steps.sort(comparator);
 
-        return new Plan(target, takenSteps);
+        return new Plan(target, steps);
     }
 
 }

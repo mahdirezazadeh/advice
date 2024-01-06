@@ -4,8 +4,13 @@ import ai.timefold.solver.core.api.score.buildin.hardsoft.HardSoftScore;
 import ai.timefold.solver.core.api.score.stream.Constraint;
 import ai.timefold.solver.core.api.score.stream.ConstraintFactory;
 import ai.timefold.solver.core.api.score.stream.ConstraintProvider;
-import org.flickit.advice.domain.TakenStep;
+import ai.timefold.solver.core.api.score.stream.Joiners;
+import org.flickit.advice.domain.Step;
+import org.flickit.advice.domain.Target;
 
+import java.util.function.Function;
+
+import static ai.timefold.solver.core.api.score.stream.ConstraintCollectors.count;
 import static ai.timefold.solver.core.api.score.stream.ConstraintCollectors.sum;
 
 public class PlanConstraintProvider implements ConstraintProvider {
@@ -14,55 +19,77 @@ public class PlanConstraintProvider implements ConstraintProvider {
     public Constraint[] defineConstraints(ConstraintFactory constraintFactory) {
         return new Constraint[]{
                 // Hard constraints
-                costsLimit(constraintFactory),
-                gainLeast(constraintFactory),
+                initScore(constraintFactory),
+                minCount(constraintFactory),
+                minGain(constraintFactory),
 //                // Soft constraints
-                totalGain(constraintFactory),
-                totalCost(constraintFactory)
+                totalBenefit(constraintFactory),
+//                totalGain(constraintFactory),
+//                totalCost(constraintFactory)
         };
     }
 
-    Constraint costsLimit(ConstraintFactory constraintFactory) {
-        return constraintFactory.forEach(TakenStep.class)
-                .filter(TakenStep::getIsOnPlan)
-                .groupBy(TakenStep::getTarget, sum(takenStep -> takenStep.getStep().getRequiredCost()))
-                .filter((target, reqCost) -> reqCost > target.getRequiredCost())
-                .penalize(HardSoftScore.ONE_HARD,
-                        (target, reqCost) -> reqCost - target.getRequiredCost())
-                .asConstraint("costLimit");
+    Constraint initScore(ConstraintFactory constraintFactory) {
+        return constraintFactory
+                .forEach(Step.class)
+                .groupBy(count())
+                .penalize(HardSoftScore.ONE_HARD, c -> 1)
+                .asConstraint("initScore");
     }
 
-    Constraint gainLeast(ConstraintFactory constraintFactory) {
+    Constraint minCount(ConstraintFactory constraintFactory) {
         return constraintFactory
-                .forEach(TakenStep.class)
-                .filter(TakenStep::getIsOnPlan)
-                .groupBy(TakenStep::getTarget, sum(takenStep -> takenStep.getStep().getGain()))
-                .filter((target, reqCost) -> reqCost < target.getTargetGain())
-                .penalize(HardSoftScore.ONE_HARD,
-                        (t, sum) -> t.getTargetGain() - sum)
-                .asConstraint("gainLeast");
+                .forEach(Step.class)
+                .filter(Step::getIsOnPlan)
+                .groupBy(count())
+                .filter(count -> count > 0)
+                .reward(HardSoftScore.ONE_HARD, c -> 1)
+                .asConstraint("minCount");
+    }
+
+
+    Constraint minGain(ConstraintFactory constraintFactory) {
+
+        return constraintFactory
+                .forEach(Step.class)
+                .join(Target.class,
+                        Joiners.equal(Step::getTarget, Function.identity()),
+                        Joiners.filtering((step, target) -> step.getIsOnPlan()))
+                .groupBy((step, target) -> target, sum((stp, tgt) -> stp.getGain()))
+                .filter((target, totalGain) -> totalGain < target.getMinGain())
+                .penalize(HardSoftScore.ONE_SOFT,
+                        (target, sum) -> target.getMinGain() - sum)
+                .asConstraint("minGain");
     }
 
     Constraint totalGain(ConstraintFactory constraintFactory) {
         return constraintFactory
-                .forEach(TakenStep.class)
-                .filter(TakenStep::getIsOnPlan)
-                .groupBy(TakenStep::getTarget, sum(takenStep -> takenStep.getStep().getGain()))
-                .filter((t, sum) -> sum >= t.getTargetGain())
+                .forEach(Step.class)
+                .filter(Step::getIsOnPlan)
+                .groupBy(Step::getTarget, sum(step -> step.getGain()))
+                .filter((t, sum) -> sum >= t.getMinGain())
                 .reward(HardSoftScore.ONE_SOFT,
-                        (t, sum) -> sum - t.getTargetGain())
+                        (t, sum) -> sum - t.getMinGain())
                 .asConstraint("totalGain");
     }
 
     Constraint totalCost(ConstraintFactory constraintFactory) {
         return constraintFactory
-                .forEach(TakenStep.class)
-                .filter(TakenStep::getIsOnPlan)
-                .groupBy(TakenStep::getTarget, sum(takenStep -> takenStep.getStep().getRequiredCost()))
-                .filter((t, sum) -> sum < t.getRequiredCost())
-                .reward(HardSoftScore.ONE_SOFT,
-                        (t, sum) -> t.getRequiredCost() - sum)
+                .forEach(Step.class)
+                .filter(Step::getIsOnPlan)
+                .groupBy(Step::getTarget, sum(Step::getCost))
+                .penalize(HardSoftScore.ONE_SOFT,
+                        (t, sum) -> sum)
                 .asConstraint("totalCost");
     }
 
+    Constraint totalBenefit(ConstraintFactory constraintFactory) {
+        return constraintFactory
+                .forEach(Step.class)
+                .filter(Step::getIsOnPlan)
+                .groupBy(Step::getTarget, sum(Step::getGain), sum(Step::getCost))
+                .reward(HardSoftScore.ONE_SOFT,
+                        (target, totalGain, totalCost) -> Math.round(((float) totalGain / totalCost) * 20))
+                .asConstraint("totalBenefit");
+    }
 }

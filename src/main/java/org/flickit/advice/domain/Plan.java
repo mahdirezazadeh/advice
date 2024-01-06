@@ -22,17 +22,17 @@ public class Plan {
 
     @ProblemFactCollectionProperty
     @ValueRangeProvider
-    private List<Boolean> isOnPlans = List.of(Boolean.FALSE, Boolean.TRUE);
+    private List<Boolean> isOnPlans = List.of(Boolean.TRUE, Boolean.FALSE);
 
     @PlanningEntityCollectionProperty
-    private List<TakenStep> takenSteps;
+    private List<Step> steps;
 
     @PlanningScore
     private HardSoftScore score;
 
-    public Plan(Target target, List<TakenStep> takenSteps) {
+    public Plan(Target target, List<Step> steps) {
         this.target = target;
-        this.takenSteps = takenSteps;
+        this.steps = steps;
     }
 }
 

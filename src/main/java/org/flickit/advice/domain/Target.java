@@ -9,6 +9,5 @@ import lombok.*;
 @AllArgsConstructor
 public class Target {
 
-    private int targetGain;
-    private int requiredCost;
+    private int minGain;
 }
