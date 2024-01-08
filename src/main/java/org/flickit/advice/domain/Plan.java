@@ -34,4 +34,3 @@ public class Plan {
         this.questions = questions;
     }
 }
-

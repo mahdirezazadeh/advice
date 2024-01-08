@@ -24,26 +24,35 @@ public class Question {
 
     @ProblemFactCollectionProperty
     @ValueRangeProvider
-    private List<Boolean> options = List.of(Boolean.FALSE, Boolean.TRUE);
+    private List<Double> options;
 
     @PlanningVariable
-    private Boolean power;
+    private Double option;
+
+    private Double currentOption;
 
     private Target target;
 
-    public Question(Long id, Target target, int gain, int cost) {
+    public Question(Long id, Target target, int gain, int cost, Double currentOption, List<Double> options) {
         this.id = id;
-        this.target = target;
         this.gain = gain;
         this.cost = cost;
+        this.options = options;
+        this.target = target;
+        this.currentOption = currentOption;
+    }
+
+    public double getGainRatio() {
+        return option - currentOption;
     }
 
     @Override
     public String toString() {
-        return "TakenStep{" +
+        return "Question{" +
                 "gain=" + gain +
                 ", cost=" + cost +
-                ", isOnPlan=" + power +
+                ", option=" + option +
+                ", currentOption=" + currentOption +
                 '}';
     }
 }

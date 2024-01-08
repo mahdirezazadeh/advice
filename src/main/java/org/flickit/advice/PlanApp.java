@@ -22,8 +22,7 @@ public class PlanApp {
                         .withConstraintProviderClass(PlanConstraintProvider.class)
                         // The solver runs only for 5 seconds on this small dataset.
                         // It's recommended to run for at least 5 minutes ("5m") otherwise.
-                        .withTerminationSpentLimit(Duration.ofSeconds(10)));
-//                .withTerminationSpentLimit(Duration.ofMinutes(5)));
+                        .withTerminationSpentLimit(Duration.ofSeconds(2)));
 
         // Load the problem
         Plan problem = generateDemoData();
@@ -39,27 +38,21 @@ public class PlanApp {
     private static void printPlan(Plan solution) {
         System.out.println("score is: " + solution.getScore());
 
-        List<Question> questions = solution.getQuestions().stream().filter(Question::getPower).toList();
-        questions.forEach(System.out::println
+        List<Question> questions = solution.getQuestions().stream()
+                .filter(q -> q.getGainRatio() != 0)
+                .toList();
+        questions.forEach(System.out::println);
 
-        );
     }
 
     public static Plan generateDemoData() {
-        Target target = new Target(32);
+        Target target = new Target(13);
 
         long id = 0L;
         List<Question> questions = new ArrayList<>();
-        questions.add(new Question(id++, target, 11, 17));
-        questions.add(new Question(id++, target, 4, 16));
-        questions.add(new Question(id++, target, 8, 10));
-        questions.add(new Question(id++, target, 12, 15));
-        questions.add(new Question(id++, target, 13, 17));
-        questions.add(new Question(id++, target, 14, 18));
-        questions.add(new Question(id++, target, 10, 11));
-        questions.add(new Question(id++, target, 12, 25));
-        questions.add(new Question(id++, target, 13, 17));
-        questions.add(new Question(id++, target, 14, 25));
+        questions.add(new Question(id++, target, 5, 40, 0.0, List.of((double) 0, 0.25, 0.5, 0.75, 1.0)));
+        questions.add(new Question(id++, target, 6, 4, 0.0, List.of((double) 0, 0.25, 0.5, 0.75, 1.0)));
+        questions.add(new Question(id++, target, 4, 4, 0.0, List.of((double) 0, 0.25, 0.5, 0.75, 1.0)));
 
         return new Plan(target, questions);
     }

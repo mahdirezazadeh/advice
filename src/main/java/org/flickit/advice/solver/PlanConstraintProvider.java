@@ -9,6 +9,8 @@ import org.flickit.advice.domain.Question;
 import org.flickit.advice.domain.Target;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.ToIntBiFunction;
 
 import static ai.timefold.solver.core.api.score.stream.ConstraintCollectors.count;
 import static ai.timefold.solver.core.api.score.stream.ConstraintCollectors.sum;
@@ -19,43 +21,22 @@ public class PlanConstraintProvider implements ConstraintProvider {
     public Constraint[] defineConstraints(ConstraintFactory constraintFactory) {
         return new Constraint[]{
                 // Hard constraints
-                initScore(constraintFactory),
-                minCount(constraintFactory),
                 minGain(constraintFactory),
-//                // Soft constraints
-                totalBenefit(constraintFactory)
+                // Soft constraints
+                totalBenefit(constraintFactory),
+                leastCount(constraintFactory)
         };
     }
 
-    Constraint initScore(ConstraintFactory constraintFactory) {
-        return constraintFactory
-                .forEach(Question.class)
-                .groupBy(count())
-                .penalize(HardSoftScore.ONE_HARD, c -> 1)
-                .asConstraint("initScore");
-    }
-
-    Constraint minCount(ConstraintFactory constraintFactory) {
-        return constraintFactory
-                .forEach(Question.class)
-                .filter(Question::getPower)
-                .groupBy(count())
-                .filter(count -> count > 0)
-                .reward(HardSoftScore.ONE_HARD, c -> 1)
-                .asConstraint("minCount");
-    }
-
-
     Constraint minGain(ConstraintFactory constraintFactory) {
-
         return constraintFactory
                 .forEach(Question.class)
                 .join(Target.class,
-                        Joiners.equal(Question::getTarget, Function.identity()),
-                        Joiners.filtering((question, target) -> question.getPower()))
-                .groupBy((question, target) -> target, sum((q, tgt) -> q.getGain()))
+                        Joiners.equal(Question::getTarget, Function.identity())
+                )
+                .groupBy((question, target) -> target, sum(getQuestionScore()))
                 .filter((target, totalGain) -> totalGain < target.getMinGain())
-                .penalize(HardSoftScore.ONE_SOFT,
+                .penalize(HardSoftScore.ONE_HARD,
                         (target, sum) -> target.getMinGain() - sum)
                 .asConstraint("minGain");
     }
@@ -63,10 +44,31 @@ public class PlanConstraintProvider implements ConstraintProvider {
     Constraint totalBenefit(ConstraintFactory constraintFactory) {
         return constraintFactory
                 .forEach(Question.class)
-                .filter(Question::getPower)
-                .groupBy(Question::getTarget, sum(Question::getGain), sum(Question::getCost))
+                .filter(isQuestionOnPlan())
+                .groupBy(
+                        Question::getTarget,
+                        sum((q) -> (int) (Math.round(q.getGain() * q.getGainRatio()))),
+                        sum((q) -> (int) (Math.round(q.getCost() * q.getGainRatio()))))
                 .reward(HardSoftScore.ONE_SOFT,
-                        (target, totalGain, totalCost) -> Math.round(((float) totalGain / totalCost) * 20))
+                        (target, totalGain, totalCost) -> Math.round(((float) totalGain / totalCost) * 100))
                 .asConstraint("totalBenefit");
+    }
+
+    Constraint leastCount(ConstraintFactory constraintFactory) {
+        return constraintFactory
+                .forEach(Question.class)
+                .filter(isQuestionOnPlan())
+                .groupBy(count())
+                .filter(count -> count > 0)
+                .penalize(HardSoftScore.ONE_SOFT, c -> c)
+                .asConstraint("leastCount");
+    }
+
+    private Predicate<Question> isQuestionOnPlan() {
+        return q -> q.getGainRatio() > 0;
+    }
+
+    private ToIntBiFunction<Question, Target> getQuestionScore() {
+        return (q, tgt) -> (int) Math.floor(q.getGain() * q.getGainRatio());
     }
 }
